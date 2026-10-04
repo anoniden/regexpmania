@@ -12,7 +12,7 @@
 <h1 class="logo logo-bar" role="img" aria-label="RegExp MANIA!"></h1>
 <div class="status-side stats">
 <div class="stat"><span class="label">Time</span><span class="value" id="time">1:00</span></div>
-<div class="stat"><span class="label">Score</span><span class="value" id="score">0.0</span></div>
+<div class="stat"><span class="label">Score</span><span class="value" id="score">0</span></div>
 <div class="stat"><span class="label">Best</span><span class="value" id="best-score">—</span><code id="best-pattern" class="best-pattern"></code></div>
 </div>
 </header>
@@ -28,7 +28,7 @@
 </section>
 </main>
 <footer id="entry">
-<label for="regex-input">Enter a regular expression that matches every target word and nothing else. <code>^</code> and <code>$</code> anchor the start and end of a word. <code>\v</code> = <code>[aeiou]</code>, <code>\c</code> = <code>[^aeiou]</code>. Finish early for +1 point per second left. Esc quits the round.</label>
+<label for="regex-input">Enter a regular expression that matches every target word and nothing else. <code>^</code> and <code>$</code> anchor the start and end of a word. <code>\v</code> = <code>[aeiou]</code>, <code>\c</code> = <code>[^aeiou]</code>. Finish early for +10 points per second left. Esc quits the round.</label>
 <div class="row">
 <input id="regex-input" type="text" autocomplete="off" spellcheck="false" autofocus>
 </div>
@@ -54,7 +54,7 @@
 <li>Type a regular expression at the bottom. It may match anywhere in a word; use <code>^</code> and <code>$</code> to anchor to the start and end.</li>
 <li>Two non-standard shorthands are available: <code>\v</code> matches a vowel (<code>[aeiou]</code>) and <code>\c</code> matches a non-vowel (<code>[^aeiou]</code>). The secret may use them too.</li>
 <li>Target words your pattern matches turn <span class="hit-text">blue</span>. Words outside the target set that it also matches appear in <span class="extra-text">red</span> on the right.</li>
-<li>Match all of the target words and nothing else to maximize your score. If you finish early, you earn <strong>+1 point</strong> for each second remaining.</li>
+<li>Match all of the target words and nothing else to maximize your score. If you finish early, you earn <strong>+10 points</strong> for each second remaining.</li>
 <li>Press <strong>Esc</strong> to quit the round early and keep your best score so far.</li>
 </ol>
 <p class="muted">The secret uses at most 15 characters and operators such as <code>[]</code>, <code>[^]</code>, <code>{}</code>, <code>?</code>, <code>*</code>, <code>|</code>, <code>.</code>, <code>\v</code>, <code>\c</code> and backreferences like <code>(.)\1</code>. The secret is revealed when the round ends.</p>
@@ -278,14 +278,16 @@ el.time.classList.toggle("urgent", state.remaining <= 10);
 }
 function currentScore() {
 const raw = Math.max(state.matchedTarget - state.matchedExtra, 0);
-return (raw / state.targetWords.length) * 100;
+return (raw / state.targetWords.length) * 1000;
 }
+const BONUS_PER_SECOND = 10;
+function fmtScore(n) { return String(Math.round(n)); }
 function finalScore() {
 return state.best.score + state.bonus;
 }
 function renderBest() {
 const b = state.best;
-el.best.textContent = b.pattern === null ? "—" : b.score.toFixed(1);
+el.best.textContent = b.pattern === null ? "—" : fmtScore(b.score);
 el.bestPattern.textContent = b.pattern === null ? "" : `/${b.pattern}/`;
 }
 function isPerfect() {
@@ -340,7 +342,7 @@ frag.appendChild(more);
 }
 el.extraList.replaceChildren(frag);
 const score = currentScore();
-el.score.textContent = score.toFixed(1);
+el.score.textContent = fmtScore(score);
 if (re && (state.best.pattern === null || score > state.best.score)) {
 state.best = { score, pattern: text, matchedTarget, matchedExtra };
 renderBest();
@@ -351,17 +353,17 @@ function endGame(won = false, quit = false) {
 clearInterval(state.timer);
 state.over = true;
 state.won = won;
-if (won) state.bonus = state.remaining;
+if (won) state.bonus = state.remaining * BONUS_PER_SECOND;
 hideCountdown();
 el.input.disabled = true;
 const b = state.best;
-el.score.textContent = finalScore().toFixed(1);
-el.finalScore.textContent = finalScore().toFixed(1);
+el.score.textContent = fmtScore(finalScore());
+el.finalScore.textContent = fmtScore(finalScore());
 el.overlayTitle.textContent = won ? "Perfect match!" : quit ? "Game over" : "Time's up!";
 el.secretReveal.textContent = state.secret.pattern;
 el.finalDetail.textContent = won
 ? `You matched all ${state.targetWords.length} target words with ${state.remaining} ` +
-`second${state.remaining === 1 ? "" : "s"} to spare: 100 + ${state.bonus} time bonus.`
+`second${state.remaining === 1 ? "" : "s"} to spare: 1000 + ${state.bonus} time bonus.`
 : b.pattern === null
 ? `You didn't enter a valid pattern.`
 : `Your best pattern /${b.pattern}/ matched ${b.matchedTarget} of ${state.targetWords.length} ` +
